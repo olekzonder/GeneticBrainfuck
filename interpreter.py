@@ -1,17 +1,18 @@
 import constants
+
 def analyzeSyntax(program):
+
     bracketStack = []
     for i in program:
         if i == '[':
             bracketStack.append(i)
         if i == ']':
             if len(bracketStack) == 0:
-                return False
+                raise SyntaxError
             bracketStack.pop()
     
     if len(bracketStack) != 0:
-        return False
-    return True
+        raise SyntaxError
 
 
 def countBrackets(program):
@@ -19,11 +20,11 @@ def countBrackets(program):
     for i in program:
         if i == '[' or i == ']':
             c+=1
-    return c   
+    return c
+       
 def interpret(program):
     program = str(program)
-    if analyzeSyntax(program) == False:
-        return False
+    analyzeSyntax(program)
     i = 0
     n = 0
     pos = 0
@@ -37,17 +38,17 @@ def interpret(program):
 
         elif program[i]  == '<':
             if pos == 0:
-                return False
+                raise RuntimeError
             pos -= 1
 
         elif program[i] == '+':
             if buf[pos] == 255:
-                return False #переполнение буфера
+                raise OverflowError
             buf[pos] += 1
 
         elif program[i]  == '-':
             if buf[pos] == 0:
-                return False #переполнение буфера
+                raise OverflowError
             buf[pos] -= 1
 
         elif program[i] == '.':
@@ -65,7 +66,7 @@ def interpret(program):
         i += 1
         n += 1
         if n >= constants.maxCycle:
-            return False
+            raise RecursionError
 
     if len(res) != 0:
         return res

@@ -4,19 +4,26 @@ import random
 import generation
 
 def getFitness(program, result):
-    output = interpreter.interpret(program)
+    try:
+        output = interpreter.interpret(program)
+    except SyntaxError:
+        return constants.errorScore/interpreter.countBrackets(program)
+    except RuntimeError:
+        return constants.errorScore
+    except OverflowError:
+        return constants.errorScore
     if output == False:
-        c = interpreter.countBrackets(program)
-        return constants.errorScore / (c+1)
-    if len(output) != 0:
-        f = 0x454d505459
-        for i in range(max(len(output),len(result))):
-            try:
-                f -= abs(ord(output[i]) - ord(result[i])) * (1/((i+1)*(i+1)))
-            except IndexError:
-                f -= 1000
-        f -= len(program) * constants.lengthPenalty
-    return f
+        return constants.errorScore
+    max_score = len(result) * constants.charSize
+    score = 0
+    for i in range(max([len(result),len(output)])):
+        try:
+            score += abs(ord(output[i])-ord(result[i]))
+        except IndexError:
+            score += constants.charSize
+    score += (len(program)*constants.lengthPenalty)
+    return max_score - score 
+
 def getScores(programs, result):
     scores = []
     for i in programs:

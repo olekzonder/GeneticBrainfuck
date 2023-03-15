@@ -6,6 +6,7 @@ import generation
 import threading
 import time
 import logging
+
 def checkInput(goal):
     for i in goal:
         if ord(i) > 255:
@@ -13,15 +14,24 @@ def checkInput(goal):
             exit()
 
 def outputResult(generations,bestProgram):
+        output = ''
         generations = int(generations)
         bestProgram = str(bestProgram)
         if generations == 0: 
             print("Начало работы")
         else:
-            output = interpreter.interpret(bestProgram)
-            output = output if output != False else "Код выводит ошибку..."
+            try:
+                output = interpreter.interpret(bestProgram)
+                if not output:
+                    output = "Код не выводит никаких символов"
+                else:
+                    output
+            except:
+                output = "Код выводит ошибку"
+            print("Поколение:",generations)
             print("Лучшая программа: %s" %output)
             print("Код: %s" %bestProgram)
+        return output
 
 def bestProgramExists(program,programs):
     if program in programs:
@@ -35,7 +45,7 @@ def replacePrograms(parent, child, programs):
             programs[i] = child
             break
     return programs
-print("Genetic BrainFuck (3 ОКТ 2022)")
+print("Genetic BrainFuck (15 МАРТА 2023)")
 if len(sys.argv) >1:
     if len(sys.argv) == 2:
         goal = sys.argv[1]
@@ -49,11 +59,14 @@ checkInput(goal)
 programs = generation.createPopulation()
 scores = []
 bestProgram = ''
+prevBest = ''
 generations = 0
 matchFound = False
+stagnation = 1
 while True:
     scores = genetic.getScores(programs, goal)
     bestProgram = genetic.getBest(programs,scores)
+    displayTime = 10000*stagnation
     parent1 = genetic.getParent(programs,scores,'')
     parent2 = genetic.getParent(programs,scores,parent1)
     children = genetic.breed(parent1,parent2)
@@ -61,21 +74,29 @@ while True:
     programs = replacePrograms(parent2, children[1], programs)
     if not bestProgramExists(bestProgram,programs):
         programs[genetic.getWorstIndex(scores)] = bestProgram
-    if generations % constants.displayTime == 0:
-        outputResult(generations, bestProgram)
-        if interpreter.interpret(bestProgram) == goal and matchFound == False:
-            matchFound == True
-            print("---ПОКОЛЕНИЕ %d -----------------------------------------------" % generations)
-            print("БЫЛ ПОЛУЧЕН ПРАВИЛЬНЫЙ ОТВЕТ: %s" %interpreter.interpret(bestProgram))
-            print("Код:", bestProgram)
-            print("---------------------------------------------------------------")
-            f = open("geneticbrainfuck.txt","w")
-            f.write(bestProgram)
-            f.close()
-            print("Полученная программа записана в файл geneticbrainfuck.txt")
-            answer = str(input("Желаете продолжить? (y/n): "))
-            if answer.lower() != 'y':
-                exit()
-            else:
-                matchFound = True
+    if generations % displayTime == 0:
+        res = outputResult(generations, bestProgram)
+        if prevBest == bestProgram:
+            stagnation += 1
+        else:
+            stagnation = 1
+        try:
+            if res == goal and matchFound == False:
+                matchFound == True
+                print("---ПОКОЛЕНИЕ %d -----------------------------------------------" % generations)
+                print("БЫЛ ПОЛУЧЕН ПРАВИЛЬНЫЙ ОТВЕТ: %s" %interpreter.interpret(bestProgram))
+                print("Код:", bestProgram)
+                print("---------------------------------------------------------------")
+                f = open("geneticbrainfuck.txt","w")
+                f.write(bestProgram)
+                f.close()
+                print("Полученная программа записана в файл geneticbrainfuck.txt")
+                answer = str(input("Желаете продолжить? (y/n): "))
+                if answer.lower() != 'y':
+                    exit()
+                else:
+                    matchFound = True
+            prevBest = bestProgram
+        except SyntaxError:
+            pass
     generations += 1
